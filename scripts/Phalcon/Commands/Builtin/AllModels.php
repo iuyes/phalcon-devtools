@@ -53,6 +53,7 @@ class AllModels extends Command implements CommandsInterface
         'fk' 				=> "Define any virtual foreign keys.  ",
         'validations' 		=> "Define possible domain validation according to conventions.  ",
         'directory=s' 		=> "Base path on which project will be created",
+        'mapcolumn'       => 'Get some code for map columns. [optional]',
     );
 
     /**
@@ -83,11 +84,7 @@ class AllModels extends Command implements CommandsInterface
                 $config = include $configPath;
             }
 
-            if (file_exists($path.'public')) {
-                $modelsDir = 'public/'.$config->application->modelsDir;
-            } else {
-                $modelsDir = $config->application->modelsDir;
-            }
+            $modelsDir = $config->application->modelsDir;
         } else {
             $modelsDir = $this->getOption('models');
         }
@@ -104,6 +101,7 @@ class AllModels extends Command implements CommandsInterface
             'genSettersGetters' => $this->isReceivedOption('get-set'),
             'genDocMethods' => $this->isReceivedOption('doc'),
             'modelsDir' => $modelsDir,
+            'mapColumn'       => $this->isReceivedOption('mapcolumn'),
         ));
 
         $modelBuilder->build();
@@ -146,7 +144,7 @@ class AllModels extends Command implements CommandsInterface
      */
     public function getRequiredParams()
     {
-        return 0;
+        return 1;
     }
 
 }
