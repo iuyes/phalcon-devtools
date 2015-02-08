@@ -20,6 +20,8 @@
 
 namespace Phalcon\Builder;
 
+use Phalcon\Db;
+use Phalcon\Db\Adapter\Pdo;
 use Phalcon\Db\Column;
 use Phalcon\Builder\Component;
 use Phalcon\Builder\BuilderException;
@@ -147,6 +149,7 @@ class Model extends Component
 
         $templateAttributes = "
     /**
+     * %s
      *
      * @var %s
      */
@@ -254,15 +257,15 @@ class Model extends Component
             $modelsDir = $config->application->modelsDir;
         } else {
             $modelsDir = $this->_options['modelsDir'];
-        }            
-        
-        $modelsDir = rtrim(rtrim($modelsDir, '/'), '\\') . DIRECTORY_SEPARATOR;             
-        
+        }
+
+        $modelsDir = rtrim(rtrim($modelsDir, '/'), '\\') . DIRECTORY_SEPARATOR;
+
         if ($this->isAbsolutePath($modelsDir) == false) {
             $modelPath = $path . DIRECTORY_SEPARATOR . $modelsDir;
         } else {
             $modelPath = $modelsDir;
-        }                                 
+        }
 
         $methodRawCode = array();
         $className = $this->_options['className'];
@@ -514,13 +517,24 @@ class Model extends Component
         $attributes = array();
         $setters = array();
         $getters = array();
+
+        // get the comment for columns
+        $comments = array();
+        $sql = 'SELECT COLUMN_NAME, COLUMN_COMMENT FROM information_schema.COLUMNS WHERE TABLE_NAME = :table_name';
+        $result = $db->query($sql, ['table_name' => $table]);
+        $result->setFetchMode(Db::FETCH_NUM);
+        foreach ($result->getInternalResult() as $row) {
+            $columnName = $row[0];
+            $comments[$columnName] = $row[1];
+        }
+
         foreach ($fields as $field) {
             $type = $this->getPHPType($field->getType());
             if ($useSettersGetters) {
 
                 if (!array_key_exists(strtolower($field->getName()), $exclude)) {
                     $attributes[] = sprintf(
-                        $templateAttributes, $type, 'protected', $field->getName()
+                        $templateAttributes, $comments[$field->getName()], $type, 'protected', $field->getName()
                     );
                     $setterName = Utils::camelize($field->getName());
                     $setters[] = sprintf(
@@ -556,7 +570,7 @@ class Model extends Component
                 }
             } else {
                 $attributes[] = sprintf(
-                    $templateAttributes, $type, 'public', $field->getName()
+                    $templateAttributes, $comments[$field->getName()], $type, 'public', $field->getName()
                 );
             }
         }
